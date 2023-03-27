@@ -1,6 +1,6 @@
 /**
- * Adog64's wonderful library of Embedded System Utility Functions for the MSP430FR2355
-*/
+* Adog64's wonderful library of Embedded System Utility Functions for the MSP430FR2355
+**/
 
 
 #pragma once
@@ -215,73 +215,3 @@ void setB3TimerID(char timer, char n)
     int* timer_ctl = LOCATION_OF_TB0CTL + (timer << 6);
     *timer_ctl |= ((BIT6|BIT7) & bit);
 }
-
-void resetB3Timer(char timer)
-{
-    // TBCLR located at bit 2 of TBxCTL
-    int* timer_ctl = LOCATION_OF_TB0CTL + (timer << 6);
-    *timer_ctl |= BIT2;
-}
-
-void setB3TimerMode(char timer, char mode)
-{
-    int bit = mode << 4;
-    int* timer_ctl = LOCATION_OF_TB0CTL + (timer << 4);
-    *timer_ctl |= bit;
-}
-
-void setB3TimerSource(char timer, char source)
-{
-    int bit = source << 8;
-    int* timer_ctl = LOCATION_OF_TB0CTL + (timer << 4);
-    *timer_ctl |= bit;
-}
-
-void generateTimerPWM(char timer, char duty_cycle_us)
-{
-    int* timer_ctl = LOCATION_OF_TB0CTL + (timer << 4);
-    *timer_ctl |= TBSSEL_2 | MC_1 | TBCLR | TBIE; // Get clock from SMCLK, set mode to up, clear, and set enable interrupts
-    TB0CCR1 = duty_cycle_us;
-}
-
-#if defined(TB0_PWM)
-void __attribute__ ((interrupt(TIMER0_B1_VECTOR))) TIMER0_B1_ISR (void)
-{
-    switch(__even_in_range(TB0IV,TB0IV_TBIFG))
-    {
-        case TB0IV_NONE:
-            break;                               // No interrupt
-        case TB0IV_TBCCR1:
-            clearPinValue(1,0);
-            break;                               // CCR1 Set the pin to a 0
-        case TB0IV_TBCCR2:
-            break;                               // CCR2 not used
-        case TB0IV_TBIFG:
-            setPinValue(1,0);
-            break;
-        default:
-            break;
-    }
-}
-#endif
-
-#if defined(TB1_PWM)
-void __attribute__ ((interrupt(TIMER1_B1_VECTOR))) TIMER1_B1_ISR (void)
-{
-    switch(__even_in_range(TB1IV,TB1IV_TBIFG))
-    {
-        case TB1IV_NONE:
-            break;                               // No interrupt
-        case TB1IV_TBCCR1:
-            tb1SignalLow();
-            break;                               // CCR1 Set the pin to a 0
-        case TB1IV_TBCCR2:
-            break;                               // CCR2 not used
-        case TB1IV_TBIFG:
-            tb1SignalHigh();
-            break;
-        default:
-            break;
-    }
-}
-#endif
