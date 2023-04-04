@@ -15,6 +15,7 @@
 #define LOCATION_OF_P1OUT 0x0202
 #define LOCATION_OF_P1IE  0x021A
 #define LOCATION_OF_P1IES 0x0218
+#define LOCATION_OF_P1IN  0x0200
 
 #define LOCATION_OF_TB0CTL 0x0380
 
@@ -47,28 +48,34 @@ void unlockGPIO();
 
 /// @brief Set a pin as output P[port].[pin]
 /// @param port port containing pin
-/// @param pin bit index within register
+/// @param pin bit index within port
 void setAsOutput(char port, char pin);
 
 /// @brief Set a pin as input P[port].[pin]
 /// @param port port containing pin
-/// @param pin bit index within register
+/// @param pin bit index within port
 void setAsInput(char port, char pin);
 
 /// @brief Set the value of pin P[port].[pin] to logic 1
 /// @param port port containing pin
-/// @param pin @bit index within register
+/// @param pin bit index within port
 void setPinValue(char port, char pin);
 
 /// @brief Clear the value of pin P[port].[pin] to logic 0
 /// @param port port containing pin
-/// @param pin @bit index within register
+/// @param pin bit index within port
 void clearPinValue(char port, char pin);
 
 /// @brief Toggle the value of pin P[port].[pin]
 /// @param port port containing pin
-/// @param pin bit index within register
+/// @param pin bit index within port
 void togglePinValue(char port, char pin);
+
+/// @brief Read the value from a GPIO pin
+/// @param port the port containing pin
+/// @param pin bit index within port
+void getPinValue(char port, char pin);
+
 
 // ===== Interrupt Config =====
 
@@ -158,6 +165,14 @@ void clearPinValue(char port , char pin)
     port -= 1;
     char* out = LOCATION_OF_P1OUT + ((port >> 1) << 5) + (port & 1);
     *out &= ~bit;
+}
+
+void getPinValue(char port, char pin)
+{
+    char bit = BIT0 << pin;
+    port -= 1;
+    char* out = LOCATION_OF_P1IN + ((port >> 1) << 5) + (port & 1);
+    *out |= bit;
 }
 
 void togglePinValue(char port, char pin)

@@ -6,19 +6,21 @@
 #define SawtoothWaveTimerControl TB2CTL
 #define SineWaveTimerControl TB3CTL
 
-
-void initSquareWave(int frequency);
-void initTriangleWave(int frequency);
-void initSawtoothWave(int frequency);
-void initSineWave(int frequency);
-
 void initGPIO();
 void initTimers();
+
+void generateSquareWave(int frequency);
 
 
 int main(void)
 {
     initGPIO();
+    initTimers();
+
+    while (true)
+    {
+        
+    }
 }
 
 void initGPIO()
@@ -70,4 +72,35 @@ void initTimers()
     SquareWaveTimerControl |= TBSSEL_2 | MC_1 | TBIDEX_4;
     TriangleWaveTimerControl |= TBSSEL_2 | MC_3 | TBIDEX_4;
     SawtoothWaveTimerControl |= TBSSEL_2 | MC_3 | TBIDEX_4;
+}
+
+void generateSquareWave(int frequency)
+{
+    TB0CCR0 = 62500/frequency;
+    TB0CCR1 = 31250/frequency;
+}
+
+void generateTriangleWave(int frequency)
+{
+    TB1CCR0 = 31250/frequency;
+    TB1CCR1 = 15625/frequency;
+}
+
+void generateSawtoothWave(int frequency)
+{
+    TB2CCR0 = 62500/frequency;
+    TB2CCR1 = 31250/frequency;
+}
+
+void __attribute__ ((interrupt(TIMER0_B1_VECTOR))) TIMER0_B1_ISR (void)
+{
+    switch(__even_in_range(TB0IV,TB0IV_TBIFG))
+    {
+        case TB0IV_TBCCR1:
+            setPinValue(1,0);
+            break;                               // CCR1 Set the pin to a 0
+        case TB0IV_TBCCR0:
+            clearPinValue(1,0);
+            break;
+    }
 }
