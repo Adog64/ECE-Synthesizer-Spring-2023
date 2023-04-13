@@ -1,5 +1,6 @@
 #include <msp430.h>
 #include "embedded_utils.h"
+#include "freq_period.h"
 
 #define SquareWaveTimerControl TB0CTL
 #define TriangleWaveTimerControl TB1CTL
@@ -61,10 +62,10 @@ void initGPIO()
     setAsInput(3, 7);       // 4B
 
     // Set 4 output pins (one for each waveform) on port 4
-    setAsOutput(4, 0);
-    setAsOutput(4, 1);
-    setAsOutput(4, 2);
-    setAsOutput(4, 3);
+    setAsOutput(4, 0);      // Square wave out
+    setAsOutput(4, 1);      // Triangle wave out
+    setAsOutput(4, 2);      // Sawtooth wave out
+    setAsOutput(4, 3);      // Sine wave out
 }
 
 void initTimers()
@@ -92,15 +93,22 @@ void generateSawtoothWave(int frequency)
     TB2CCR1 = 31250/frequency;
 }
 
+
+// Output square wave on P4.0
 void __attribute__ ((interrupt(TIMER0_B1_VECTOR))) TIMER0_B1_ISR (void)
 {
     switch(__even_in_range(TB0IV,TB0IV_TBIFG))
     {
         case TB0IV_TBCCR1:
-            setPinValue(1,0);
+            setPinValue(4,0);
             break;                               // CCR1 Set the pin to a 0
-        case TB0IV_TBCCR0:
-            clearPinValue(1,0);
+        case TB0IV_TBIFG:
+            clearPinValue(4,0);
             break;
     }
+}
+
+void __attribute__ ((interrupt(PORT1_VECTOR))) Port_1 (void)
+{
+    
 }
