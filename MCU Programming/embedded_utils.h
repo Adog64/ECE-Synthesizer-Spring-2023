@@ -16,6 +16,7 @@
 #define LOCATION_OF_P1IE  0x021A
 #define LOCATION_OF_P1IES 0x0218
 #define LOCATION_OF_P1IN  0x0200
+#define LOCATION_OF_P1RES 0x0206
 
 #define LOCATION_OF_TB0CTL 0x0380
 
@@ -55,6 +56,16 @@ void setAsOutput(char port, char pin);
 /// @param port port containing pin
 /// @param pin bit index within port
 void setAsInput(char port, char pin);
+
+/// @brief Add a pull down resistor to P[port].[pin]
+/// @param port port containing pin
+/// @param pin bit index within port
+void enablePullDownResistor(char port, char pin);
+
+/// @brief Add a pull up resistor to P[port].[pin]
+/// @param port port containing pin
+/// @param pin bit index within port
+void enablePullUpResistor(char port, char pin);
 
 /// @brief Set the value of pin P[port].[pin] to logic 1
 /// @param port port containing pin

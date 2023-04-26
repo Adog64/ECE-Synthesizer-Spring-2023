@@ -428,7 +428,7 @@
       "idf": "",
       "netlist": "",
       "specctra_dsn": "",
-      "step": "",
+      "step": "../EnclosureModels/synthesizer.step",
       "vrml": ""
     },
     "page_layout_descr_file": ""
