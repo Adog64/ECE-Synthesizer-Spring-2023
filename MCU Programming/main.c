@@ -5,18 +5,21 @@
 #define SquareWaveTimerControl TB0CTL
 #define TriangleWaveTimerControl TB1CTL
 #define SawtoothWaveTimerControl TB2CTL
-#define SineWaveTimerControl TB3CTL
+#define SamplingTimerControl TB3CTL
 
 #define ALL_ON_8b 0xFF
 #define ALL_ON_16b 0xFFFF
 #define ALL_OFF_8b 0x00
 #define ALL_OFF_16b 0x0000
 
+#define SAMPLE_PERIOD 0xFF
+#define MAX_OUTPUT 0xFF
+
 void initGPIO();
 void initTimers();
 void updateTimers();
 
-int freq_31250, freq_62500;
+int freq_31250, freq_62500, freq;
 
 int main(void)
 {
@@ -90,7 +93,7 @@ void initGPIO()
     setAsOutput(4, 0);      // Square wave out
     setAsOutput(4, 1);      // Triangle wave out
     setAsOutput(4, 2);      // Sawtooth wave out
-    setAsOutput(4, 3);      // Sine wave out
+    // setAsOutput(4, 3);      // Sine wave out
 }
 
 void initTimers()
@@ -98,6 +101,9 @@ void initTimers()
     SquareWaveTimerControl |= TBSSEL_2 | MC_1 | TBIDEX_4;
     TriangleWaveTimerControl |= TBSSEL_2 | MC_3 | TBIDEX_4;
     SawtoothWaveTimerControl |= TBSSEL_2 | MC_1 | TBIDEX_4;
+
+    SamplingTimerControl |= TBSSEL_2 | MC_1;
+    TB3CCR0 = 0;
 }
 
 void updateTimers()
@@ -108,6 +114,11 @@ void updateTimers()
     TB1CCR0 = freq_31250;   // Triangle wave frequencies
 
     TB2CCR0 = freq_62500;   // Sawtooth wave frequencies
+
+    sawtoothStep = 0;
+    sawtoothDutyCycle = 0;
+    triangeStep = 0;
+    triangleDutyCycle = 0;
 }
 
 // Output square wave on P4.0
@@ -124,47 +135,89 @@ void __attribute__ ((interrupt(TIMER0_B1_VECTOR))) TIMER0_B1_ISR (void)
     }
 }
 
+void __attribute__ ((interrupt(TIMER3_B1_VECTOR))) TIMER3_B1_ISR (void)
+{
+  switch(__even_in_range(TB0IV,TB0IV_TBIFG))
+  {
+    case TB0IV_TBIFG:
+      // Sawtooth output
+      if (sawtoothStep == SAMPLE_PERIOD)
+      {
+        sawtoothStep = 0;
+        sawtoothDutyCycle = (float)v / MAX_OUTPUT * SAMPLE_PERIOD * freq / f_C3;
+      }
+      else
+        sawtoothStep++;
+      
+      if (sawtoothStep <= sawtoothDutyCycle)
+        setPinValue(4,2);
+      else
+        clearPinValue(4,2);
+    
+      if (triangleStep == SAMPLE_PERIOD)
+      {
+        triangleStep = 0;
+        triangleDutyCycle = (float)v / MAX_OUTPUT * SAMPLE_PERIOD * 2 * freq / f_C3;
+      }
+      else
+        triangleStep++;
+
+      if (sawtoothStep <= sawtoothDutyCycle)
+        setPinValue(4,1);
+      else
+        clearPinValue(4,1);
+  }
+}
+
 void __attribute__ ((interrupt(PORT1_VECTOR))) Port_1 (void)
 {
     if (P1IFG & BIT0)
     {
         freq_62500 = f_C3_62500;
         freq_31250 = f_C3_31250;
+        freq = f_C3;
     }
     else if (P1IFG & BIT1)
     {
         freq_62500 = f_Cs3_62500;
         freq_31250 = f_Cs3_31250;
+        freq = f_Cs3;
     }
     else if (P1IFG & BIT2)
     {
         freq_62500 = f_D3_62500;
         freq_31250 = f_D3_31250;
+        freq = f_D3;
     }
     else if (P1IFG & BIT3)
     {
         freq_62500 = f_Ds3_62500;
         freq_31250 = f_Ds3_31250;
+        freq = f_Ds3;
     }
     else if (P1IFG & BIT4)
     {
         freq_62500 = f_E3_62500;
         freq_31250 = f_E3_31250;
+        freq = f_E3;
     }
     else if (P1IFG & BIT5)
     {
         freq_62500 = f_F3_62500;
         freq_31250 = f_F3_31250;
+        freq = f_F3;
     }
     else if (P1IFG & BIT6)
     {
         freq_62500 = f_Fs3_62500;
         freq_31250 = f_Fs3_31250;
+        freq = f_Fs3;
     }
     else if (P1IFG & BIT7)
     {
         freq_62500 = f_G3_62500;
         freq_31250 = f_G3_31250;
+        freq = f_G3;
     }
     updateTimers();
 }
@@ -175,41 +228,49 @@ void __attribute__ ((interrupt(PORT2_VECTOR))) Port_2 (void)
     {
         freq_62500 = f_Gs3_62500;
         freq_31250 = f_Gs3_31250;
+        freq = f_Gs3;
     }
     else if (P2IFG & BIT1)
     {
         freq_62500 = f_A3_62500;
         freq_31250 = f_A3_31250;
+        freq = f_A3;
     }
     else if (P2IFG & BIT2)
     {
         freq_62500 = f_As3_62500;
         freq_31250 = f_As3_31250;
+        freq = f_As3;
     }
     else if (P2IFG & BIT3)
     {
         freq_62500 = f_B3_62500;
         freq_31250 = f_B3_31250;
+        freq = f_B3;
     }
     else if (P2IFG & BIT4)
     {
         freq_62500 = f_C4_62500;
         freq_31250 = f_C4_31250;
+        freq = f_C4;
     }
     else if (P2IFG & BIT5)
     {
         freq_62500 = f_Cs4_62500;
         freq_31250 = f_Cs4_31250;
+        freq = f_Cs4;
     }
     else if (P2IFG & BIT6)
     {
         freq_62500 = f_D4_62500;
         freq_31250 = f_D4_31250;
+        freq = f_D4;
     }
     else if (P2IFG & BIT7)
     {
         freq_62500 = f_Ds4_62500;
         freq_31250 = f_Ds4_31250;
+        freq = f_Ds4;
     }
     updateTimers();
 }
@@ -220,41 +281,49 @@ void __attribute__ ((interrupt(PORT3_VECTOR))) Port_3 (void)
     {
         freq_62500 = f_E4_62500;
         freq_31250 = f_E4_31250;
+        freq = f_E4;
     }
     else if (P2IFG & BIT1)
     {
         freq_62500 = f_F4_62500;
         freq_31250 = f_F4_31250;
+        freq = f_F4;
     }
     else if (P3IFG & BIT2)
     {
         freq_62500 = f_Fs4_62500;
         freq_31250 = f_Fs4_31250;
+        freq = f_Fs4;
     }
     else if (P3IFG & BIT3)
     {
         freq_62500 = f_G4_62500;
         freq_31250 = f_G4_31250;
+        freq = f_G4;
     }
     else if (P3IFG & BIT4)
     {
         freq_62500 = f_Gs4_62500;
         freq_31250 = f_Gs4_31250;
+        freq = f_Gs4;
     }
     else if (P3IFG & BIT5)
     {
         freq_62500 = f_A4_62500;
         freq_31250 = f_A4_31250;
+        freq = f_A4;
     }
     else if (P3IFG & BIT6)
     {
         freq_62500 = f_As4_62500;
         freq_31250 = f_As4_31250;
+        freq = f_As4;
     }
     else if (P3IFG & BIT7)
     {
         freq_62500 = f_B4_62500;
         freq_31250 = f_B4_31250;
+        freq = f_B4;
     }
     updateTimers();
 }

@@ -14,7 +14,7 @@ for v in voltages:
     else:
         p += 1
 
-    if p < duty_cycle:
+    if p <= duty_cycle:
         outputs[v] = 1
     else:
         outputs[v] = 0
