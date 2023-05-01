@@ -1,5 +1,7 @@
 PERIOD = 16
-voltages = list(range(256))
+
+LOOP_LEN = 512
+voltages = list(range(LOOP_LEN))
 
 outputs = {}
 
@@ -8,7 +10,7 @@ p = 0
 for v in voltages:
     if p == PERIOD:
         p = 0
-        duty_cycle = v * PERIOD / 256
+        duty_cycle = v * PERIOD / LOOP_LEN
     else:
         p += 1
 
@@ -19,6 +21,7 @@ for v in voltages:
 
 with open("outs.pwl", "w") as of:
     out_str = ""
-    for out in outputs:
-        out_str += f'{out}: {outputs[out]}\n'
+    for i in range(5):
+        for out in outputs:
+            out_str += f'{out*50 + 50*LOOP_LEN*i}n {outputs[out]}\n'
     of.write(out_str)
