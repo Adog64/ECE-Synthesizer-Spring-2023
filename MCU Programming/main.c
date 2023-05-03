@@ -1,7 +1,7 @@
 #include <msp430.h>
 #include "embedded_utils.h"
 #include "freq_period.h"
-
+ 
 #define SquareWaveTimerControl TB0CTL
 #define TriangleWaveTimerControl TB1CTL
 #define SawtoothWaveTimerControl TB2CTL
@@ -15,20 +15,27 @@
 #define SAMPLE_PERIOD 0xFF
 #define MAX_OUTPUT 0xFF
 
+#define DEBUG true
+
 void initGPIO();
 void initTimers();
 void updateTimers();
+void initDebug();
 
 int freq_31250, freq_62500, freq;
+int sawtoothDutyCycle, sawtoothStep;
+int triangleDutyCycle, triangleStep;
 
 int main(void)
 {
     initGPIO();
     initTimers();
 
+    if (DEBUG)
+      initDebug();
+
     while (true)
-    {
-        
+    {    
     }
 }
 
@@ -90,7 +97,7 @@ void initGPIO()
     setAsInput(3, 7);       // 4B
 
     // Set 4 output pins (one for each waveform) on port 4
-    setAsOutput(4, 0);      // Square wave out
+    setAsOutput(6 ,6);      // Square wave out
     setAsOutput(4, 1);      // Triangle wave out
     setAsOutput(4, 2);      // Sawtooth wave out
     // setAsOutput(4, 3);      // Sine wave out
@@ -103,7 +110,14 @@ void initTimers()
     SawtoothWaveTimerControl |= TBSSEL_2 | MC_1 | TBIDEX_4;
 
     SamplingTimerControl |= TBSSEL_2 | MC_1;
-    TB3CCR0 = 0;
+    TB3CCR0 = 20;
+}
+
+void initDebug()
+{
+  freq_62500 = f_As3_62500;
+  freq_31250 = f_As3_31250;
+  freq = f_As3;
 }
 
 void updateTimers()
@@ -117,7 +131,7 @@ void updateTimers()
 
     sawtoothStep = 0;
     sawtoothDutyCycle = 0;
-    triangeStep = 0;
+    triangleStep = 0;
     triangleDutyCycle = 0;
 }
 
@@ -127,15 +141,15 @@ void __attribute__ ((interrupt(TIMER0_B1_VECTOR))) TIMER0_B1_ISR (void)
     switch(__even_in_range(TB0IV,TB0IV_TBIFG))
     {
         case TB0IV_TBCCR1:
-            setPinValue(4,0);
+            setPinValue(6,6);
             break;                               // CCR1 Set the pin to a 0
         case TB0IV_TBIFG:
-            clearPinValue(4,0);
+            clearPinValue(6,6);
             break;
     }
 }
 
-void __attribute__ ((interrupt(TIMER3_B1_VECTOR))) TIMER3_B1_ISR (void)
+void __attribute__ ((interrupt(TIMER3_B0_VECTOR))) TIMER3_B0_ISR (void)
 {
   switch(__even_in_range(TB0IV,TB0IV_TBIFG))
   {
@@ -144,7 +158,7 @@ void __attribute__ ((interrupt(TIMER3_B1_VECTOR))) TIMER3_B1_ISR (void)
       if (sawtoothStep == SAMPLE_PERIOD)
       {
         sawtoothStep = 0;
-        sawtoothDutyCycle = (float)v / MAX_OUTPUT * SAMPLE_PERIOD * freq / f_C3;
+        sawtoothDutyCycle = ((float)TB2R / MAX_OUTPUT) * SAMPLE_PERIOD * ((float)freq / f_C3);
       }
       else
         sawtoothStep++;
@@ -157,12 +171,12 @@ void __attribute__ ((interrupt(TIMER3_B1_VECTOR))) TIMER3_B1_ISR (void)
       if (triangleStep == SAMPLE_PERIOD)
       {
         triangleStep = 0;
-        triangleDutyCycle = (float)v / MAX_OUTPUT * SAMPLE_PERIOD * 2 * freq / f_C3;
+        triangleDutyCycle = (float)TB1R / MAX_OUTPUT * SAMPLE_PERIOD * 2 * freq / f_C3;
       }
       else
         triangleStep++;
 
-      if (sawtoothStep <= sawtoothDutyCycle)
+      if (triangleStep <= triangleDutyCycle)
         setPinValue(4,1);
       else
         clearPinValue(4,1);
